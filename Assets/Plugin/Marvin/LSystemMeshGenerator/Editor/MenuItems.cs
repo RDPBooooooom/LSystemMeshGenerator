@@ -47,6 +47,12 @@ namespace Marvin.LSystemMeshGenerator
 				EditorUtils.CreateAsset<LSystem>(path);
 			}
 		}
+
+		[MenuItem(Constants.ToolMenuPath + "Show Mesh Generator")]
+		private static void ShowMeshGenerator()
+		{
+			MeshGeneratorWindow.ShowMeshGenerator();
+		}
 	}
 }
 #endif

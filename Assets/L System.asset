@@ -12,5 +12,5 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 27a9480635514fc479109c3351ca21d4, type: 3}
   m_Name: L System
   m_EditorClassIdentifier: 
-  seed: A
-  ruleSet: {fileID: 11400000, guid: 511c56f507cec4649a3531646ad5b564, type: 2}
+  seed: 
+  ruleSet: {fileID: 0}

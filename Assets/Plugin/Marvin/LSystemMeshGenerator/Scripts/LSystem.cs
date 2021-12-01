@@ -8,7 +8,7 @@ namespace Marvin.LSystemMeshGenerator
 {
 
 	/// <summary>
-	/// 
+	/// Stores all data needed to create a 
 	/// </summary>
 	[Serializable]
 	public class LSystem : ScriptableObject
@@ -34,7 +34,7 @@ namespace Marvin.LSystemMeshGenerator
 		/// </summary>
 		/// <param name="iterations">How many times the rule set should be applied to the seed</param>
 		/// <returns>Result of the L-System with the definied number of iterations</returns>
-		public string GetLSystemString(int iterations)
+		public virtual string GetLSystemString(int iterations)
 		{
 			string currentString = seed;
 

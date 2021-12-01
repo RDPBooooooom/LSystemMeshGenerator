@@ -10,9 +10,10 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 7635e6c72e94c7541a8abc220cb59339, type: 3}
-  m_Name: L System Rule Set
+  m_Name: FractalPlantRule
   m_EditorClassIdentifier: 
   rules:
-    m_keys: 5800
+    m_keys: 58004600
     m_values:
-    - FF<XX>*Fw
+    - F+[[X]-X]-F[-FX]+X
+    - FF
