@@ -25,6 +25,7 @@ namespace Marvin.LSystemMeshGenerator
 
 		private GUIStyle titleStyle;
 
+		private Mesh latestMesh;
 		#endregion
 
 		public static void ShowMeshGenerator()
@@ -69,7 +70,8 @@ namespace Marvin.LSystemMeshGenerator
 					message += "\n- -> The next draw action is rotated one inverted angle step on the Vector3.forward axis";
 					message += "\n[ -> Opens a branch. Stores position and rotation";
 					message += "\n] -> Closes the latest branch. Return to the latest stored position and rotation";
-					
+					message += "\n\nCharacters not mentioned above aren't triggering any action. You can use them as placeholders to generate more characters.";
+
 					EditorGUILayout.Space();
 					EditorGUILayout.HelpBox(message, MessageType.Info);
 				}
@@ -106,13 +108,41 @@ namespace Marvin.LSystemMeshGenerator
 
 			if (generatePressed)
 			{
-				Mesh mesh = MeshGenerator.GenerateMesh(lSystem, iterations, distancePerStep, anglePerStep, startDiameter, endDiameter);
+				if (CheckBigValues())
+				{
+					if (!EditorUtility.DisplayDialog("You're using Big values", "You're using big values. Dependig on your rules and seed the generation can take very long! \n Please note that there will be no way to stop this operation without closing Unity. Make sure you have saved the changes that you want to keep before generating this mesh!", "I'm sure", "Cancel")) return;
+				}
+
+				latestMesh = MeshGenerator.GenerateMesh(lSystem, iterations, distancePerStep, anglePerStep, startDiameter, endDiameter);
 
 				GameObject gameObject = new GameObject();
 				gameObject.AddComponent<MeshRenderer>().material = mat;
-				gameObject.AddComponent<MeshFilter>().mesh = mesh;
+				gameObject.AddComponent<MeshFilter>().mesh = latestMesh;
 			}
 
+			if (savePressed)
+			{
+				string path = EditorUtility.SaveFilePanelInProject(
+				"Save mesh",
+				"New mesh",
+				"asset",
+				"Choose where to save the mesh.");
+
+				if (path != "")
+				{
+					EditorUtils.SaveAsset<Mesh>(latestMesh, path);
+				}
+			}
+		}
+
+		private bool CheckBigValues()
+		{
+			if (iterations > 5) return true;
+			if (distancePerStep > 5) return true;
+			if (startDiameter > 4) return true;
+			if (endDiameter > 4) return true;
+
+			return false;
 		}
 
 		private void OnEnable()
@@ -136,5 +166,4 @@ namespace Marvin.LSystemMeshGenerator
 			}
 		}
 	}
-
 }

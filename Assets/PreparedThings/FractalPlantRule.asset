@@ -15,5 +15,5 @@ MonoBehaviour:
   rules:
     m_keys: 58004600
     m_values:
-    - F+[[X]-X]-F[-FX]+X
+    - F<+[[X]->X]-<F[->FX]+<X
     - FF

@@ -26,6 +26,8 @@ namespace Marvin.LSystemMeshGenerator
 
 		private static BranchInfo currentBranchInfo;
 
+		private static bool isFirstUpAction;
+
 		#endregion
 
 		#region Enums
@@ -44,19 +46,18 @@ namespace Marvin.LSystemMeshGenerator
 			// Setup
 			branchStack = new Stack<BranchInfo>();
 			currentBranchInfo = null;
+			isFirstUpAction = true;
 
 			MeshGenerator.distancePerStep = distancePerStep;
 			MeshGenerator.anglePerStep = anglePerStep;
 			MeshGenerator.startDiameter = startDiameter;
 			MeshGenerator.endDiameter = endDiameter;
 
-			currentDirection = new Vector3(1, 1, 0);
+			currentDirection = new Vector3(0, 1, 0);
 
 			string source = lSystem.GetLSystemString(iterations);
 
 			Debug.Log(source);
-
-			mesh = GetStartingMesh();
 
 			foreach (char key in source)
 			{
@@ -75,6 +76,7 @@ namespace Marvin.LSystemMeshGenerator
 						EndBranchAction();
 						break;
 					case '<':
+						// AngleStep to left
 						AngleUpdateAction(true, Vector3.up);
 						break;
 					case '>':
@@ -112,6 +114,11 @@ namespace Marvin.LSystemMeshGenerator
 
 		private static void UpAction()
 		{
+			if (isFirstUpAction)
+			{
+				mesh = GetStartingMesh();
+				isFirstUpAction = false;
+			}
 
 			Vector3[] vertices = GetVertices();
 			int[] wallTriangels = GetTriangles();
@@ -150,7 +157,7 @@ namespace Marvin.LSystemMeshGenerator
 		{
 			currentBranchInfo = branchStack.Pop();
 
-			MeshGenerator.currentDirection = currentBranchInfo.currentDirection;
+			currentDirection = currentBranchInfo.currentDirection;
 
 			CloseMesh();
 		}
@@ -171,17 +178,30 @@ namespace Marvin.LSystemMeshGenerator
 					new Vector3(0, 0, 1),
 				};
 
-			startMesh.triangles = new int[]
+			if (currentDirection.y > 0)
+			{
+				startMesh.triangles = new int[]
 				{
 					0, 1, 2,
 					0, 2, 3
 				};
+			}
+			else
+			{
+				startMesh.triangles = new int[]
+				{
+					0, 2, 1,
+					0, 3, 2
+				};
+			}
+
 
 			return startMesh;
 		}
 
 		private static Vector3[] GetVertices()
 		{
+	//		Debug.Log($"================ NEW VERTS ================");
 			Vector3[] lastVertices;
 			if (currentBranchInfo != null)
 			{
@@ -195,6 +215,15 @@ namespace Marvin.LSystemMeshGenerator
 			for (int i = 0; i < lastVertices.Length; i++)
 			{
 				lastVertices[i] = GetForwardWithDirection(lastVertices[i], i);
+		//		Debug.Log($"Vertice {i}: {lastVertices[i]}");
+			}
+
+			lastVertices[3] = GetDirectionCorrection(lastVertices[0], lastVertices[3]);
+			lastVertices[2] = GetDirectionCorrection(lastVertices[1], lastVertices[2]);
+
+			for (int i = 0; i < lastVertices.Length; i++)
+			{
+		//		Debug.Log($"Corrected Vertice {i}: {lastVertices[i]}");
 			}
 
 			return lastVertices;
@@ -226,23 +255,57 @@ namespace Marvin.LSystemMeshGenerator
 			switch (currentIndex)
 			{
 				case 0:
+					// Bottom Left
 					return currentDirection.normalized * distancePerStep;
 				case 1:
+					// Top Left
 					return currentDirection.normalized * distancePerStep;
 				case 2:
+					// Top right
 					return currentDirection.normalized * distancePerStep;
 				case 3:
+					//Bottom right
 					return currentDirection.normalized * distancePerStep;
 				default:
 					return currentDirection.normalized * distancePerStep;
 			}
 		}
 
+		private static Vector3 GetDirectionCorrection(Vector3 pointOne, Vector3 pointTwo)
+		{
+			if (currentDirection.normalized.y == 1) return pointTwo;
+			if (currentDirection.normalized.y == -1) return pointTwo;
+
+			if (pointOne.z == pointTwo.z && pointTwo.y == pointOne.y)
+			{
+				float toAdd;
+				float diff = pointTwo.y - pointOne.y;
+
+				if (diff < 0)
+				{
+					toAdd = Mathf.Clamp(1 + diff, 0, 1) * -1;
+				}
+				else
+				{
+					toAdd = Mathf.Clamp(1 - diff, 0, 1);
+				}
+
+				if (currentDirection.x < 0)
+				{
+					toAdd *= -1;
+				}
+
+				return new Vector3(pointTwo.x, pointTwo.y + toAdd, pointTwo.z);
+			}
+
+			return pointTwo;
+		}
+
 		private static int[] GetTriangles()
 		{
 			int verticeCount = mesh.vertexCount - 1;
 
-			int[] triangles;
+			List<int> triangleList = new List<int>();
 
 			/*
 			*	Bottom Left Normal: -3
@@ -258,83 +321,103 @@ namespace Marvin.LSystemMeshGenerator
 			{
 				int branchVertexCount = currentBranchInfo.currentVertexCount - 1;
 
-				if (currentDirection.y >= 0)
-				{
-					triangles = new int[]
-					{
-						// Front
-						branchVertexCount - 2, verticeCount + 3, branchVertexCount - 1,
-						branchVertexCount - 2, verticeCount + 2, verticeCount + 3,
-						// Left
-						branchVertexCount - 2, branchVertexCount - 3, verticeCount + 1,
-						branchVertexCount - 2, verticeCount + 1, verticeCount + 2,
-						// Back
-						branchVertexCount - 3, branchVertexCount, verticeCount + 4,
-						branchVertexCount - 3, verticeCount + 4, verticeCount + 1,
-						// Right
-						branchVertexCount - 1, verticeCount + 3, verticeCount + 4,
-						branchVertexCount - 1, verticeCount + 4, branchVertexCount
-					};
-				}
-				else
-				{
-					triangles = new int[]
-					{
-						// Front
-						branchVertexCount - 2, branchVertexCount - 1, verticeCount + 3,
-						branchVertexCount - 2, verticeCount + 3, verticeCount + 2, 
-						// Left
-						branchVertexCount - 2, branchVertexCount - 3, verticeCount + 1,
-						branchVertexCount - 2, verticeCount + 1, verticeCount + 2,
-						// Back
-						branchVertexCount - 3, branchVertexCount, verticeCount + 4,
-						branchVertexCount - 3, verticeCount + 4, verticeCount + 1,
-						// Right
-						branchVertexCount - 1, verticeCount + 3, verticeCount + 4,
-						branchVertexCount - 1, verticeCount + 4, branchVertexCount
-					};
-				}
+				triangleList.AddRange(GetFrontTriangles(branchVertexCount, verticeCount));
+				triangleList.AddRange(GetLeftTriangles(branchVertexCount, verticeCount));
+				triangleList.AddRange(GetBackTriangles(branchVertexCount, verticeCount));
+				triangleList.AddRange(GetRightTriangles(branchVertexCount, verticeCount));
 			}
 			else
 			{
-				triangles = new int[]
-				{
-					// Front
-					verticeCount - 2, verticeCount + 3, verticeCount - 1,
-					verticeCount - 2, verticeCount + 2, verticeCount + 3,
-					// Left
-					verticeCount - 2, verticeCount - 3, verticeCount + 1,
-					verticeCount - 2, verticeCount + 1, verticeCount + 2,
-					// Back
-					verticeCount - 3, verticeCount, verticeCount + 4,
-					verticeCount - 3, verticeCount + 4, verticeCount + 1,
-					// Right
-					verticeCount - 1, verticeCount + 3, verticeCount + 4,
-					verticeCount - 1, verticeCount + 4, verticeCount
-				};
+				triangleList.AddRange(GetFrontTriangles(verticeCount, verticeCount));
+				triangleList.AddRange(GetLeftTriangles(verticeCount, verticeCount));
+				triangleList.AddRange(GetBackTriangles(verticeCount, verticeCount));
+				triangleList.AddRange(GetRightTriangles(verticeCount, verticeCount));
 			}
 
-			return triangles;
+			return triangleList.ToArray();
 		}
 
 		private static int[] GetFrontTriangles(int beforeVerticeCount, int newVerticeCount)
 		{
-			//TODO: Take direction into account
-			return new int[]{
-				beforeVerticeCount - 2, newVerticeCount + 3, beforeVerticeCount - 1,
-				beforeVerticeCount - 2, newVerticeCount + 2, newVerticeCount + 3
-			};
+			if (currentDirection.y > 0)
+			{
+				return new int[]{
+					beforeVerticeCount - 2, newVerticeCount + 3, beforeVerticeCount - 1,
+					beforeVerticeCount - 2, newVerticeCount + 2, newVerticeCount + 3
+				};
+			}
+			else
+			{
+				return new int[]{
+					beforeVerticeCount - 2, beforeVerticeCount - 1, newVerticeCount + 3,
+					beforeVerticeCount - 2, newVerticeCount + 3, newVerticeCount + 2
+				};
+			}
+		}
+
+		private static int[] GetLeftTriangles(int beforeVerticeCount, int newVerticeCount)
+		{
+			if (currentDirection.y > 0)
+			{
+				return new int[]{
+					beforeVerticeCount - 2, beforeVerticeCount - 3, newVerticeCount + 1,
+					beforeVerticeCount - 2, newVerticeCount + 1, newVerticeCount + 2
+				};
+			}
+			else
+			{
+				return new int[]{
+					beforeVerticeCount - 2, newVerticeCount + 1, beforeVerticeCount - 3,
+					beforeVerticeCount - 2, newVerticeCount + 2, newVerticeCount + 1
+				};
+			}
+		}
+		private static int[] GetBackTriangles(int beforeVerticeCount, int newVerticeCount)
+		{
+			if (currentDirection.y > 0)
+			{
+				return new int[]{
+					beforeVerticeCount - 3, beforeVerticeCount, newVerticeCount + 4,
+					beforeVerticeCount - 3, newVerticeCount + 4, newVerticeCount + 1
+				};
+			}
+			else
+			{
+				return new int[]{
+					beforeVerticeCount - 3,  newVerticeCount + 4, beforeVerticeCount,
+					beforeVerticeCount - 3, newVerticeCount + 1, newVerticeCount + 4
+				};
+			}
+		}
+
+		private static int[] GetRightTriangles(int beforeVerticeCount, int newVerticeCount)
+		{
+			if (currentDirection.y > 0)
+			{
+				return new int[]{
+					beforeVerticeCount - 1, newVerticeCount + 3, newVerticeCount + 4,
+					beforeVerticeCount - 1, newVerticeCount + 4, beforeVerticeCount
+				};
+			}
+			else
+			{
+				return new int[]{
+					beforeVerticeCount - 1,  newVerticeCount + 4, newVerticeCount + 3,
+					beforeVerticeCount - 1, beforeVerticeCount, newVerticeCount + 4
+				};
+			}
 		}
 
 		private static void CloseMesh()
 		{
 			int verticeCount = mesh.vertexCount - 1;
+			int[] triangles;
 
-			int[] triangles = new int[]
-			{
-				// Top Triangles
+			triangles = new int[]{
 				verticeCount - 3, verticeCount, verticeCount - 1,
-				verticeCount - 3, verticeCount - 1, verticeCount - 2
+				verticeCount - 3, verticeCount - 1, verticeCount - 2,
+				verticeCount - 3, verticeCount - 1, verticeCount,
+				verticeCount - 3, verticeCount - 2, verticeCount - 1
 			};
 
 			mesh.triangles = mesh.triangles.Concat(triangles).ToArray();
@@ -350,6 +433,5 @@ namespace Marvin.LSystemMeshGenerator
 		public Vector3[] lastVertices;
 		public int currentVertexCount;
 	}
-
 
 }

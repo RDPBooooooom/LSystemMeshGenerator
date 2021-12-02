@@ -17,6 +17,13 @@ namespace Marvin.LSystemMeshGenerator
 			return dataClass;
 		}
 
+		public static void SaveAsset<T>(T asset, string path) where T : Object
+		{
+			AssetDatabase.CreateAsset(asset, path);
+			AssetDatabase.Refresh();
+			AssetDatabase.SaveAssets();
+		}
+
 	}
 }
 #endif

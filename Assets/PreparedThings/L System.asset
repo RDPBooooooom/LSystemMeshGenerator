@@ -10,7 +10,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 27a9480635514fc479109c3351ca21d4, type: 3}
-  m_Name: L System2
+  m_Name: L System
   m_EditorClassIdentifier: 
   seed: X
   ruleSet: {fileID: 11400000, guid: 755b94e4036f78f42beb6d3d2d3225e6, type: 2}
